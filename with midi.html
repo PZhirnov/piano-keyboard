@@ -1,0 +1,594 @@
+<!DOCTYPE html>
+<html lang="ru">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Интерактивная фортепианная клавиатура с MIDI</title>
+    <style>
+        .piano {
+            display: flex;
+            position: relative;
+            height: 200px;
+            background: #2c3e50;
+            padding: 20px;
+            border-radius: 10px;
+            margin: 20px;
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.3);
+        }
+
+        .white-keys {
+            display: flex;
+            width: 100%;
+            height: 100%;
+        }
+
+        .white-key {
+            flex: 1;
+            background: linear-gradient(to bottom, #fff 0%, #f8f8f8 100%);
+            border: 1px solid #ddd;
+            border-radius: 0 0 8px 8px;
+            margin: 0 1px;
+            cursor: pointer;
+            position: relative;
+            z-index: 1;
+            transition: all 0.1s ease;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+
+        .white-key:hover {
+            background: linear-gradient(to bottom, #f0f0f0 0%, #e8e8e8 100%);
+        }
+
+        .white-key.active {
+            background: linear-gradient(to bottom, #e8f4ff 0%, #d0e8ff 100%);
+            transform: translateY(2px);
+            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+        }
+
+        .black-keys {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 60%;
+            display: flex;
+            padding: 20px;
+            pointer-events: none;
+            z-index: 2;
+        }
+
+        .black-key {
+            width: 8%;
+            height: 100%;
+            background: linear-gradient(to bottom, #000 0%, #333 100%);
+            border-radius: 0 0 5px 5px;
+            margin: 0 1%;
+            pointer-events: auto;
+            cursor: pointer;
+            transition: all 0.1s ease;
+            box-shadow: 0 3px 6px rgba(0, 0, 0, 0.3);
+        }
+
+        .black-key:hover {
+            background: linear-gradient(to bottom, #222 0%, #444 100%);
+        }
+
+        .black-key.active {
+            background: linear-gradient(to bottom, #4466cc 0%, #334499 100%);
+            transform: translateY(1px);
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.4);
+        }
+
+        /* Позиционирование черных клавиш */
+        .black-key:nth-child(1) {
+            margin-left: 7%;
+        }
+
+        .black-key:nth-child(2) {
+            margin-left: 8%;
+        }
+
+        .black-key:nth-child(3) {
+            margin-left: 18%;
+        }
+
+        .black-key:nth-child(4) {
+            margin-left: 19%;
+        }
+
+        .black-key:nth-child(5) {
+            margin-left: 20%;
+        }
+
+        .key-label {
+            position: absolute;
+            bottom: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-family: 'Arial', sans-serif;
+            font-size: 12px;
+            font-weight: bold;
+            color: #666;
+        }
+
+        .black-key .key-label {
+            color: white;
+            bottom: 5px;
+        }
+
+        .controls {
+            text-align: center;
+            margin: 20px;
+            padding: 15px;
+            background: #ecf0f1;
+            border-radius: 8px;
+        }
+
+        .volume-control,
+        .midi-control {
+            margin: 10px 0;
+        }
+
+        label {
+            font-family: Arial, sans-serif;
+            margin-right: 10px;
+        }
+
+        .instructions {
+            text-align: center;
+            font-family: Arial, sans-serif;
+            color: #7f8c8d;
+            margin: 10px 0;
+        }
+
+        .status {
+            text-align: center;
+            font-family: Arial, sans-serif;
+            margin: 10px 0;
+            padding: 10px;
+            border-radius: 5px;
+        }
+
+        .status.connected {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .status.disconnected {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        .status.info {
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+
+        button {
+            background: #3498db;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-family: Arial, sans-serif;
+            margin: 5px;
+            transition: background 0.3s;
+        }
+
+        button:hover {
+            background: #2980b9;
+        }
+
+        button:disabled {
+            background: #bdc3c7;
+            cursor: not-allowed;
+        }
+
+        .note-info {
+            text-align: center;
+            font-family: monospace;
+            background: #34495e;
+            color: #ecf0f1;
+            padding: 10px;
+            border-radius: 5px;
+            margin: 10px 0;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="instructions">
+        <p>🎹 Нажимайте на клавиши мышью или используйте клавиши A-S-D-F-G-H-J (белые) и W-E-T-Y-U (черные)</p>
+        <p>🎛️ Подключите MIDI-клавиатуру для реалистичной игры!</p>
+    </div>
+
+    <div id="midiStatus" class="status info">
+        MIDI: Нажмите "Подключить MIDI" для использования MIDI-клавиатуры
+    </div>
+
+    <div class="note-info">
+        Последняя нота: <span id="lastNote">-</span> |
+        Velocity: <span id="lastVelocity">-</span> |
+        MIDI код: <span id="lastMidiCode">-</span>
+    </div>
+
+    <div class="piano">
+        <div class="white-keys">
+            <!-- Белые клавиши -->
+            <div class="white-key" data-note="C4" data-frequency="261.63" data-midi="60">
+                <span class="key-label">C (A)</span>
+            </div>
+            <div class="white-key" data-note="D4" data-frequency="293.66" data-midi="62">
+                <span class="key-label">D (S)</span>
+            </div>
+            <div class="white-key" data-note="E4" data-frequency="329.63" data-midi="64">
+                <span class="key-label">E (D)</span>
+            </div>
+            <div class="white-key" data-note="F4" data-frequency="349.23" data-midi="65">
+                <span class="key-label">F (F)</span>
+            </div>
+            <div class="white-key" data-note="G4" data-frequency="392.00" data-midi="67">
+                <span class="key-label">G (G)</span>
+            </div>
+            <div class="white-key" data-note="A4" data-frequency="440.00" data-midi="69">
+                <span class="key-label">A (H)</span>
+            </div>
+            <div class="white-key" data-note="B4" data-frequency="493.88" data-midi="71">
+                <span class="key-label">B (J)</span>
+            </div>
+        </div>
+
+        <div class="black-keys">
+            <!-- Черные клавиши -->
+            <div class="black-key" data-note="C#4" data-frequency="277.18" data-midi="61">
+                <span class="key-label">C# (W)</span>
+            </div>
+            <div class="black-key" data-note="D#4" data-frequency="311.13" data-midi="63">
+                <span class="key-label">D# (E)</span>
+            </div>
+            <div class="black-key" data-note="F#4" data-frequency="369.99" data-midi="66">
+                <span class="key-label">F# (T)</span>
+            </div>
+            <div class="black-key" data-note="G#4" data-frequency="415.30" data-midi="68">
+                <span class="key-label">G# (Y)</span>
+            </div>
+            <div class="black-key" data-note="A#4" data-frequency="466.16" data-midi="70">
+                <span class="key-label">A# (U)</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="controls">
+        <div class="midi-control">
+            <button id="connectMidi">Подключить MIDI</button>
+            <button id="disconnectMidi" disabled>Отключить MIDI</button>
+            <span id="midiDeviceInfo"></span>
+        </div>
+
+        <div class="volume-control">
+            <label for="volume">Громкость:</label>
+            <input type="range" id="volume" min="0" max="100" value="50">
+        </div>
+
+        <div class="waveform-control">
+            <label for="waveform">Форма волны:</label>
+            <select id="waveform">
+                <option value="sine">Синус</option>
+                <option value="square">Прямоугольная</option>
+                <option value="sawtooth">Пилообразная</option>
+                <option value="triangle">Треугольная</option>
+            </select>
+        </div>
+    </div>
+
+    <script>
+        class Piano {
+            constructor() {
+                this.audioContext = null;
+                this.volume = 0.5;
+                this.waveform = 'sine';
+                this.activeOscillators = new Map();
+                this.keyMap = new Map();
+                this.midiAccess = null;
+                this.midiInputs = new Map();
+                this.midiEnabled = false;
+
+                this.initAudio();
+                this.initEventListeners();
+                this.initKeyboardControls();
+                this.updateMidiStatus('info', 'MIDI: Нажмите "Подключить MIDI" для использования MIDI-клавиатуры');
+            }
+
+            initAudio() {
+                try {
+                    this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
+
+                    // Инициализация элементов управления
+                    const volumeControl = document.getElementById('volume');
+                    const waveformControl = document.getElementById('waveform');
+
+                    volumeControl.addEventListener('input', (e) => {
+                        this.volume = e.target.value / 100;
+                    });
+
+                    waveformControl.addEventListener('change', (e) => {
+                        this.waveform = e.target.value;
+                    });
+
+                } catch (error) {
+                    console.error('Web Audio API не поддерживается:', error);
+                    alert('Ваш браузер не поддерживает Web Audio API');
+                }
+            }
+
+            initEventListeners() {
+                const keys = document.querySelectorAll('.white-key, .black-key');
+
+                keys.forEach(key => {
+                    // События мыши
+                    key.addEventListener('mousedown', () => this.playNote(key));
+                    key.addEventListener('mouseup', () => this.stopNote(key));
+                    key.addEventListener('mouseleave', () => this.stopNote(key));
+
+                    // События касания для мобильных устройств
+                    key.addEventListener('touchstart', (e) => {
+                        e.preventDefault();
+                        this.playNote(key);
+                    });
+                    key.addEventListener('touchend', (e) => {
+                        e.preventDefault();
+                        this.stopNote(key);
+                    });
+                });
+
+                // MIDI кнопки
+                document.getElementById('connectMidi').addEventListener('click', () => this.connectMidi());
+                document.getElementById('disconnectMidi').addEventListener('click', () => this.disconnectMidi());
+            }
+
+            initKeyboardControls() {
+                // Соответствие клавиш клавиатуры нотам
+                this.keyMap.set('a', 'C4');
+                this.keyMap.set('s', 'D4');
+                this.keyMap.set('d', 'E4');
+                this.keyMap.set('f', 'F4');
+                this.keyMap.set('g', 'G4');
+                this.keyMap.set('h', 'A4');
+                this.keyMap.set('j', 'B4');
+                this.keyMap.set('w', 'C#4');
+                this.keyMap.set('e', 'D#4');
+                this.keyMap.set('t', 'F#4');
+                this.keyMap.set('y', 'G#4');
+                this.keyMap.set('u', 'A#4');
+
+                document.addEventListener('keydown', (e) => {
+                    if (this.keyMap.has(e.key.toLowerCase())) {
+                        e.preventDefault();
+                        const note = this.keyMap.get(e.key.toLowerCase());
+                        const keyElement = document.querySelector(`[data-note="${note}"]`);
+                        if (keyElement && !this.activeOscillators.has(note)) {
+                            this.playNote(keyElement);
+                        }
+                    }
+                });
+
+                document.addEventListener('keyup', (e) => {
+                    if (this.keyMap.has(e.key.toLowerCase())) {
+                        const note = this.keyMap.get(e.key.toLowerCase());
+                        const keyElement = document.querySelector(`[data-note="${note}"]`);
+                        if (keyElement) {
+                            this.stopNote(keyElement);
+                        }
+                    }
+                });
+            }
+
+            async connectMidi() {
+                try {
+                    if (!navigator.requestMIDIAccess) {
+                        this.updateMidiStatus('disconnected', 'MIDI не поддерживается вашим браузером');
+                        return;
+                    }
+
+                    this.midiAccess = await navigator.requestMIDIAccess();
+                    this.midiEnabled = true;
+
+                    // Обработка подключенных устройств
+                    this.midiAccess.inputs.forEach(input => {
+                        this.addMidiInput(input);
+                    });
+
+                    // Обработка новых устройств
+                    this.midiAccess.addEventListener('statechange', (e) => {
+                        const port = e.port;
+                        if (port.type === 'input') {
+                            if (port.state === 'connected' && port.connection === 'open') {
+                                this.addMidiInput(port);
+                            } else if (port.state === 'disconnected') {
+                                this.removeMidiInput(port);
+                            }
+                        }
+                    });
+
+                    this.updateMidiStatus('connected', `MIDI подключено. Устройств: ${this.midiAccess.inputs.size}`);
+                    document.getElementById('connectMidi').disabled = true;
+                    document.getElementById('disconnectMidi').disabled = false;
+
+                } catch (error) {
+                    console.error('Ошибка подключения MIDI:', error);
+                    this.updateMidiStatus('disconnected', 'Ошибка подключения MIDI');
+                }
+            }
+
+            disconnectMidi() {
+                if (this.midiAccess) {
+                    this.midiAccess.inputs.forEach(input => {
+                        input.removeEventListener('midimessage', this.handleMidiMessage.bind(this));
+                    });
+                    this.midiAccess = null;
+                }
+
+                this.midiEnabled = false;
+                this.updateMidiStatus('info', 'MIDI отключено');
+                document.getElementById('connectMidi').disabled = false;
+                document.getElementById('disconnectMidi').disabled = true;
+                document.getElementById('midiDeviceInfo').textContent = '';
+            }
+
+            addMidiInput(input) {
+                input.addEventListener('midimessage', this.handleMidiMessage.bind(this));
+                this.midiInputs.set(input.id, input);
+
+                // Обновляем информацию об устройствах
+                const deviceInfo = Array.from(this.midiInputs.values())
+                    .map(device => device.name || 'Unknown Device')
+                    .join(', ');
+                document.getElementById('midiDeviceInfo').textContent = `Устройства: ${deviceInfo}`;
+            }
+
+            removeMidiInput(input) {
+                input.removeEventListener('midimessage', this.handleMidiMessage.bind(this));
+                this.midiInputs.delete(input.id);
+            }
+
+            handleMidiMessage(event) {
+                const [command, note, velocity] = event.data;
+                const commandType = command & 0xf0;
+                const channel = command & 0x0f;
+
+                // Обновляем информацию о ноте
+                document.getElementById('lastNote').textContent = this.midiToNoteName(note);
+                document.getElementById('lastVelocity').textContent = velocity;
+                document.getElementById('lastMidiCode').textContent = note;
+
+                if (commandType === 0x90 && velocity > 0) { // Note on
+                    this.playMidiNote(note, velocity);
+                } else if (commandType === 0x80 || (commandType === 0x90 && velocity === 0)) { // Note off
+                    this.stopMidiNote(note);
+                }
+                // Можно добавить обработку других MIDI сообщений (pitch bend, modulation и т.д.)
+            }
+
+            midiToNoteName(midiNumber) {
+                const notes = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
+                const octave = Math.floor(midiNumber / 12) - 1;
+                const noteIndex = midiNumber % 12;
+                return notes[noteIndex] + octave;
+            }
+
+            playMidiNote(midiNumber, velocity) {
+                const normalizedVelocity = velocity / 127; // Нормализуем velocity к 0-1
+                const frequency = this.midiToFrequency(midiNumber);
+
+                this.playFrequency(frequency, normalizedVelocity, `midi-${midiNumber}`);
+
+                // Подсвечиваем соответствующую клавишу на виртуальной клавиатуре
+                this.highlightVirtualKey(midiNumber);
+            }
+
+            stopMidiNote(midiNumber) {
+                this.stopFrequency(`midi-${midiNumber}`);
+                this.unhighlightVirtualKey(midiNumber);
+            }
+
+            midiToFrequency(midiNumber) {
+                return 440 * Math.pow(2, (midiNumber - 69) / 12);
+            }
+
+            highlightVirtualKey(midiNumber) {
+                const keyElement = document.querySelector(`[data-midi="${midiNumber}"]`);
+                if (keyElement) {
+                    keyElement.classList.add('active');
+                }
+            }
+
+            unhighlightVirtualKey(midiNumber) {
+                const keyElement = document.querySelector(`[data-midi="${midiNumber}"]`);
+                if (keyElement) {
+                    keyElement.classList.remove('active');
+                }
+            }
+
+            playNote(keyElement, velocity = 1) {
+                if (!this.audioContext) return;
+
+                const frequency = parseFloat(keyElement.dataset.frequency);
+                const note = keyElement.dataset.note;
+
+                this.playFrequency(frequency, velocity, note);
+                keyElement.classList.add('active');
+            }
+
+            playFrequency(frequency, velocity, noteId) {
+                if (!this.audioContext) return;
+
+                // Останавливаем предыдущий осциллятор для этой ноты, если он есть
+                if (this.activeOscillators.has(noteId)) {
+                    this.stopFrequency(noteId);
+                }
+
+                // Создаем осциллятор
+                const oscillator = this.audioContext.createOscillator();
+                const gainNode = this.audioContext.createGain();
+
+                oscillator.connect(gainNode);
+                gainNode.connect(this.audioContext.destination);
+
+                // Настраиваем осциллятор
+                oscillator.type = this.waveform;
+                oscillator.frequency.setValueAtTime(frequency, this.audioContext.currentTime);
+
+                // Плавное нарастание громкости с учетом velocity
+                const actualVolume = this.volume * velocity;
+                gainNode.gain.setValueAtTime(0, this.audioContext.currentTime);
+                gainNode.gain.linearRampToValueAtTime(actualVolume, this.audioContext.currentTime + 0.1);
+
+                // Запускаем осциллятор
+                oscillator.start();
+
+                // Сохраняем осциллятор
+                this.activeOscillators.set(noteId, { oscillator, gainNode });
+            }
+
+            stopNote(keyElement) {
+                const note = keyElement.dataset.note;
+                this.stopFrequency(note);
+                keyElement.classList.remove('active');
+            }
+
+            stopFrequency(noteId) {
+                if (this.activeOscillators.has(noteId)) {
+                    const { oscillator, gainNode } = this.activeOscillators.get(noteId);
+
+                    // Плавное затухание
+                    gainNode.gain.exponentialRampToValueAtTime(0.001, this.audioContext.currentTime + 0.2);
+
+                    setTimeout(() => {
+                        oscillator.stop();
+                        oscillator.disconnect();
+                    }, 200);
+
+                    this.activeOscillators.delete(noteId);
+                }
+            }
+
+            updateMidiStatus(type, message) {
+                const statusElement = document.getElementById('midiStatus');
+                statusElement.className = `status ${type}`;
+                statusElement.textContent = message;
+            }
+        }
+
+        // Инициализация пианино когда страница загружена
+        document.addEventListener('DOMContentLoaded', () => {
+            new Piano();
+        });
+    </script>
+</body>
+
+</html>
