@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<html lang="ru">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Интерактивная фортепианная клавиатура</title>
+    <style>
+        .piano {
+            display: flex;
+            position: relative;
+            height: 200px;
+            background: #2c3e50;
+            padding: 20px;
+            border-radius: 10px;
+            margin: 20px;
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.3);
+        }
+
+        .white-keys {
+            display: flex;
+            width: 100%;
+            height: 100%;
+        }
+
+        .white-key {
+            flex: 1;
+            background: linear-gradient(to bottom, #fff 0%, #f8f8f8 100%);
+            border: 1px solid #ddd;
+            border-radius: 0 0 8px 8px;
+            margin: 0 1px;
+            cursor: pointer;
+            position: relative;
+            z-index: 1;
+            transition: all 0.1s ease;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+
+        .white-key:hover {
+            background: linear-gradient(to bottom, #f0f0f0 0%, #e8e8e8 100%);
+        }
+
+        .white-key.active {
+            background: linear-gradient(to bottom, #e8f4ff 0%, #d0e8ff 100%);
+            transform: translateY(2px);
+            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+        }
+
+        .black-keys {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 60%;
+            display: flex;
+            padding: 20px;
+            pointer-events: none;
+            z-index: 2;
+        }
+
+        .black-key {
+            width: 8%;
+            height: 100%;
+            background: linear-gradient(to bottom, #000 0%, #333 100%);
+            border-radius: 0 0 5px 5px;
+            margin: 0 1%;
+            pointer-events: auto;
+            cursor: pointer;
+            transition: all 0.1s ease;
+            box-shadow: 0 3px 6px rgba(0, 0, 0, 0.3);
+        }
+
+        .black-key:hover {
+            background: linear-gradient(to bottom, #222 0%, #444 100%);
+        }
+
+        .black-key.active {
+            background: linear-gradient(to bottom, #4466cc 0%, #334499 100%);
+            transform: translateY(1px);
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.4);
+        }
+
+        /* Позиционирование черных клавиш */
+        .black-key:nth-child(1) {
+            margin-left: 7%;
+        }
+
+        .black-key:nth-child(2) {
+            margin-left: 8%;
+        }
+
+        .black-key:nth-child(3) {
+            margin-left: 18%;
+        }
+
+        .black-key:nth-child(4) {
+            margin-left: 19%;
+        }
+
+        .black-key:nth-child(5) {
+            margin-left: 20%;
+        }
+
+        .key-label {
+            position: absolute;
+            bottom: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-family: 'Arial', sans-serif;
+            font-size: 12px;
+            font-weight: bold;
+            color: #666;
+        }
+
+        .black-key .key-label {
+            color: white;
+            bottom: 5px;
+        }
+
+        .controls {
+            text-align: center;
+            margin: 20px;
+            padding: 15px;
+            background: #ecf0f1;
+            border-radius: 8px;
+        }
+
+        .volume-control {
+            margin: 10px 0;
+        }
+
+        label {
+            font-family: Arial, sans-serif;
+            margin-right: 10px;
+        }
+
+        .instructions {
+            text-align: center;
+            font-family: Arial, sans-serif;
+            color: #7f8c8d;
+            margin: 10px 0;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="instructions">
+        <p>🎹 Нажимайте на клавиши мышью или используйте клавиши A-S-D-F-G-H-J (белые) и W-E-T-Y-U (черные)</p>
+    </div>
+
+    <div class="piano">
+        <div class="white-keys">
+            <!-- Белые клавиши -->
+            <div class="white-key" data-note="C4" data-frequency="261.63">
+                <span class="key-label">C (A)</span>
+            </div>
+            <div class="white-key" data-note="D4" data-frequency="293.66">
+                <span class="key-label">D (S)</span>
+            </div>
+            <div class="white-key" data-note="E4" data-frequency="329.63">
+                <span class="key-label">E (D)</span>
+            </div>
+            <div class="white-key" data-note="F4" data-frequency="349.23">
+                <span class="key-label">F (F)</span>
+            </div>
+            <div class="white-key" data-note="G4" data-frequency="392.00">
+                <span class="key-label">G (G)</span>
+            </div>
+            <div class="white-key" data-note="A4" data-frequency="440.00">
+                <span class="key-label">A (H)</span>
+            </div>
+            <div class="white-key" data-note="B4" data-frequency="493.88">
+                <span class="key-label">B (J)</span>
+            </div>
+        </div>
+
+        <div class="black-keys">
+            <!-- Черные клавиши -->
+            <div class="black-key" data-note="C#4" data-frequency="277.18">
+                <span class="key-label">C# (W)</span>
+            </div>
+            <div class="black-key" data-note="D#4" data-frequency="311.13">
+                <span class="key-label">D# (E)</span>
+            </div>
+            <div class="black-key" data-note="F#4" data-frequency="369.99">
+                <span class="key-label">F# (T)</span>
+            </div>
+            <div class="black-key" data-note="G#4" data-frequency="415.30">
+                <span class="key-label">G# (Y)</span>
+            </div>
+            <div class="black-key" data-note="A#4" data-frequency="466.16">
+                <span class="key-label">A# (U)</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="controls">
+        <div class="volume-control">
+            <label for="volume">Громкость:</label>
+            <input type="range" id="volume" min="0" max="100" value="50">
+        </div>
+        <div class="waveform-control">
+            <label for="waveform">Форма волны:</label>
+            <select id="waveform">
+                <option value="sine">Синус</option>
+                <option value="square">Прямоугольная</option>
+                <option value="sawtooth">Пилообразная</option>
+                <option value="triangle">Треугольная</option>
+            </select>
+        </div>
+    </div>
+
+    <script>
+        class Piano {
+            constructor() {
+                this.audioContext = null;
+                this.volume = 0.5;
+                this.waveform = 'sine';
+                this.activeOscillators = new Map();
+                this.keyMap = new Map();
+
+                this.initAudio();
+                this.initEventListeners();
+                this.initKeyboardControls();
+            }
+
+            initAudio() {
+                try {
+                    this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
+
+                    // Инициализация элементов управления
+                    const volumeControl = document.getElementById('volume');
+                    const waveformControl = document.getElementById('waveform');
+
+                    volumeControl.addEventListener('input', (e) => {
+                        this.volume = e.target.value / 100;
+                    });
+
+                    waveformControl.addEventListener('change', (e) => {
+                        this.waveform = e.target.value;
+                    });
+
+                } catch (error) {
+                    console.error('Web Audio API не поддерживается:', error);
+                    alert('Ваш браузер не поддерживает Web Audio API');
+                }
+            }
+
+            initEventListeners() {
+                const keys = document.querySelectorAll('.white-key, .black-key');
+
+                keys.forEach(key => {
+                    // События мыши
+                    key.addEventListener('mousedown', () => this.playNote(key));
+                    key.addEventListener('mouseup', () => this.stopNote(key));
+                    key.addEventListener('mouseleave', () => this.stopNote(key));
+
+                    // События касания для мобильных устройств
+                    key.addEventListener('touchstart', (e) => {
+                        e.preventDefault();
+                        this.playNote(key);
+                    });
+                    key.addEventListener('touchend', (e) => {
+                        e.preventDefault();
+                        this.stopNote(key);
+                    });
+                });
+            }
+
+            initKeyboardControls() {
+                // Соответствие клавиш клавиатуры нотам
+                this.keyMap.set('a', 'C4');
+                this.keyMap.set('s', 'D4');
+                this.keyMap.set('d', 'E4');
+                this.keyMap.set('f', 'F4');
+                this.keyMap.set('g', 'G4');
+                this.keyMap.set('h', 'A4');
+                this.keyMap.set('j', 'B4');
+                this.keyMap.set('w', 'C#4');
+                this.keyMap.set('e', 'D#4');
+                this.keyMap.set('t', 'F#4');
+                this.keyMap.set('y', 'G#4');
+                this.keyMap.set('u', 'A#4');
+
+                document.addEventListener('keydown', (e) => {
+                    if (this.keyMap.has(e.key.toLowerCase())) {
+                        e.preventDefault();
+                        const note = this.keyMap.get(e.key.toLowerCase());
+                        const keyElement = document.querySelector(`[data-note="${note}"]`);
+                        if (keyElement && !this.activeOscillators.has(note)) {
+                            this.playNote(keyElement);
+                        }
+                    }
+                });
+
+                document.addEventListener('keyup', (e) => {
+                    if (this.keyMap.has(e.key.toLowerCase())) {
+                        const note = this.keyMap.get(e.key.toLowerCase());
+                        const keyElement = document.querySelector(`[data-note="${note}"]`);
+                        if (keyElement) {
+                            this.stopNote(keyElement);
+                        }
+                    }
+                });
+            }
+
+            playNote(keyElement) {
+                if (!this.audioContext) return;
+
+                const frequency = parseFloat(keyElement.dataset.frequency);
+                const note = keyElement.dataset.note;
+
+                // Останавливаем предыдущий осциллятор для этой ноты, если он есть
+                if (this.activeOscillators.has(note)) {
+                    this.stopNote(keyElement);
+                }
+
+                // Создаем осциллятор
+                const oscillator = this.audioContext.createOscillator();
+                const gainNode = this.audioContext.createGain();
+
+                oscillator.connect(gainNode);
+                gainNode.connect(this.audioContext.destination);
+
+                // Настраиваем осциллятор
+                oscillator.type = this.waveform;
+                oscillator.frequency.setValueAtTime(frequency, this.audioContext.currentTime);
+
+                // Плавное нарастание громкости
+                gainNode.gain.setValueAtTime(0, this.audioContext.currentTime);
+                gainNode.gain.linearRampToValueAtTime(this.volume, this.audioContext.currentTime + 0.1);
+
+                // Запускаем осциллятор
+                oscillator.start();
+
+                // Сохраняем осциллятор
+                this.activeOscillators.set(note, { oscillator, gainNode });
+
+                // Визуальная обратная связь
+                keyElement.classList.add('active');
+            }
+
+            stopNote(keyElement) {
+                const note = keyElement.dataset.note;
+
+                if (this.activeOscillators.has(note)) {
+                    const { oscillator, gainNode } = this.activeOscillators.get(note);
+
+                    // Плавное затухание
+                    gainNode.gain.exponentialRampToValueAtTime(0.001, this.audioContext.currentTime + 0.2);
+
+                    setTimeout(() => {
+                        oscillator.stop();
+                        oscillator.disconnect();
+                    }, 200);
+
+                    this.activeOscillators.delete(note);
+                }
+
+                // Убираем визуальную обратную связь
+                keyElement.classList.remove('active');
+            }
+        }
+
+        // Инициализация пианино когда страница загружена
+        document.addEventListener('DOMContentLoaded', () => {
+            new Piano();
+        });
+    </script>
+</body>
+
+</html>
