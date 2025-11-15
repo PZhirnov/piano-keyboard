@@ -1,0 +1,809 @@
+< !DOCTYPE html>
+    <html lang="ru">
+
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Пианино с нотным станом</title>
+        <style>
+            * {
+                margin: 0;
+                padding: 0;
+                box-sizing: border-box;
+            }
+
+            body {
+                font-family: 'Arial', sans-serif;
+                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                min-height: 100vh;
+                padding: 20px;
+            }
+
+            .container {
+                max-width: 1200px;
+                margin: 0 auto;
+                background: white;
+                border-radius: 15px;
+                box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+                overflow: hidden;
+            }
+
+            .header {
+                background: #2c3e50;
+                color: white;
+                padding: 20px;
+                text-align: center;
+            }
+
+            .header h1 {
+                margin-bottom: 10px;
+                font-size: 2.5em;
+            }
+
+            .content {
+                display: grid;
+                grid-template-columns: 1fr 300px;
+                gap: 20px;
+                padding: 20px;
+            }
+
+            /* Стили для нотного стана */
+            .sheet-music {
+                background: #f8f9fa;
+                border: 2px solid #34495e;
+                border-radius: 10px;
+                padding: 20px;
+                position: relative;
+                min-height: 400px;
+            }
+
+            .staff {
+                position: relative;
+                height: 120px;
+                margin: 20px 0;
+                background: linear-gradient(to bottom,
+                        transparent 0%, transparent 9%,
+                        #000 10%, #000 11%,
+                        transparent 12%, transparent 21%,
+                        #000 22%, #000 23%,
+                        transparent 24%, transparent 33%,
+                        #000 34%, #000 35%,
+                        transparent 36%, transparent 45%,
+                        #000 46%, #000 47%,
+                        transparent 48%, transparent 57%,
+                        #000 58%, #000 59%,
+                        transparent 60%, transparent 100%);
+            }
+
+            .staff::before {
+                content: '♪';
+                position: absolute;
+                left: -30px;
+                top: 50%;
+                transform: translateY(-50%);
+                font-size: 24px;
+                color: #34495e;
+            }
+
+            .clef {
+                position: absolute;
+                left: 10px;
+                top: 0;
+                font-size: 80px;
+                font-family: 'Arial Unicode MS';
+                color: #2c3e50;
+            }
+
+            .notes-container {
+                position: relative;
+                height: 120px;
+                margin: 20px 0;
+            }
+
+            .note {
+                position: absolute;
+                transition: all 0.3s ease;
+            }
+
+            .note-head {
+                width: 20px;
+                height: 15px;
+                background: #e74c3c;
+                border-radius: 50%;
+                position: absolute;
+            }
+
+            .note-stem {
+                width: 2px;
+                height: 30px;
+                background: #e74c3c;
+                position: absolute;
+                left: 15px;
+                top: -10px;
+            }
+
+            .note.whole .note-stem {
+                display: none;
+            }
+
+            .note-label {
+                position: absolute;
+                bottom: -25px;
+                left: 50%;
+                transform: translateX(-50%);
+                font-size: 12px;
+                color: #7f8c8d;
+                white-space: nowrap;
+            }
+
+            .ledger-line {
+                position: absolute;
+                width: 25px;
+                height: 2px;
+                background: #000;
+            }
+
+            /* Стили для пианино */
+            .piano-container {
+                background: #34495e;
+                padding: 20px;
+                border-radius: 10px;
+            }
+
+            .piano {
+                display: flex;
+                position: relative;
+                height: 150px;
+                background: #2c3e50;
+                padding: 15px;
+                border-radius: 10px;
+                margin-bottom: 20px;
+            }
+
+            .white-keys {
+                display: flex;
+                width: 100%;
+                height: 100%;
+            }
+
+            .white-key {
+                flex: 1;
+                background: linear-gradient(to bottom, #fff 0%, #f8f8f8 100%);
+                border: 1px solid #ddd;
+                border-radius: 0 0 8px 8px;
+                margin: 0 1px;
+                cursor: pointer;
+                position: relative;
+                z-index: 1;
+                transition: all 0.1s ease;
+            }
+
+            .white-key:hover {
+                background: linear-gradient(to bottom, #f0f0f0 0%, #e8e8e8 100%);
+            }
+
+            .white-key.active {
+                background: linear-gradient(to bottom, #e8f4ff 0%, #d0e8ff 100%);
+            }
+
+            .black-keys {
+                position: absolute;
+                top: 0;
+                left: 0;
+                right: 0;
+                height: 60%;
+                display: flex;
+                padding: 15px;
+                pointer-events: none;
+                z-index: 2;
+            }
+
+            .black-key {
+                width: 8%;
+                height: 100%;
+                background: linear-gradient(to bottom, #000 0%, #333 100%);
+                border-radius: 0 0 5px 5px;
+                margin: 0 1%;
+                pointer-events: auto;
+                cursor: pointer;
+                transition: all 0.1s ease;
+            }
+
+            .black-key:hover {
+                background: linear-gradient(to bottom, #222 0%, #444 100%);
+            }
+
+            .black-key.active {
+                background: linear-gradient(to bottom, #4466cc 0%, #334499 100%);
+            }
+
+            .black-key:nth-child(1) {
+                margin-left: 7%;
+            }
+
+            .black-key:nth-child(2) {
+                margin-left: 8%;
+            }
+
+            .black-key:nth-child(3) {
+                margin-left: 18%;
+            }
+
+            .black-key:nth-child(4) {
+                margin-left: 19%;
+            }
+
+            .black-key:nth-child(5) {
+                margin-left: 20%;
+            }
+
+            .key-label {
+                position: absolute;
+                bottom: 10px;
+                left: 50%;
+                transform: translateX(-50%);
+                font-size: 11px;
+                font-weight: bold;
+                color: #666;
+            }
+
+            .black-key .key-label {
+                color: white;
+                bottom: 5px;
+            }
+
+            /* Панель управления */
+            .controls {
+                background: #ecf0f1;
+                padding: 20px;
+                border-radius: 10px;
+                grid-column: 1 / -1;
+            }
+
+            .control-group {
+                margin-bottom: 15px;
+            }
+
+            label {
+                display: block;
+                margin-bottom: 5px;
+                font-weight: bold;
+                color: #2c3e50;
+            }
+
+            input[type="range"],
+            select,
+            button {
+                width: 100%;
+                padding: 8px;
+                border: 1px solid #bdc3c7;
+                border-radius: 5px;
+                background: white;
+            }
+
+            button {
+                background: #3498db;
+                color: white;
+                border: none;
+                cursor: pointer;
+                transition: background 0.3s;
+                margin-top: 5px;
+            }
+
+            button:hover {
+                background: #2980b9;
+            }
+
+            .played-notes {
+                background: white;
+                padding: 15px;
+                border-radius: 10px;
+                border: 2px solid #bdc3c7;
+                max-height: 200px;
+                overflow-y: auto;
+            }
+
+            .note-record {
+                padding: 5px;
+                border-bottom: 1px solid #ecf0f1;
+                font-family: monospace;
+            }
+
+            .stats {
+                display: grid;
+                grid-template-columns: 1fr 1fr;
+                gap: 10px;
+                margin-top: 10px;
+            }
+
+            .stat-card {
+                background: white;
+                padding: 10px;
+                border-radius: 5px;
+                text-align: center;
+                border: 1px solid #bdc3c7;
+            }
+
+            .stat-value {
+                font-size: 1.5em;
+                font-weight: bold;
+                color: #2c3e50;
+            }
+
+            .stat-label {
+                font-size: 0.8em;
+                color: #7f8c8d;
+            }
+
+            /* Анимации */
+            @keyframes noteAppear {
+                0% {
+                    transform: scale(0);
+                    opacity: 0;
+                }
+
+                50% {
+                    transform: scale(1.2);
+                    opacity: 1;
+                }
+
+                100% {
+                    transform: scale(1);
+                    opacity: 1;
+                }
+            }
+
+            .note.new {
+                animation: noteAppear 0.5s ease-out;
+            }
+
+            /* Адаптивность */
+            @media (max-width: 768px) {
+                .content {
+                    grid-template-columns: 1fr;
+                }
+
+                .header h1 {
+                    font-size: 2em;
+                }
+            }
+        </style>
+    </head>
+
+    <body>
+        <div class="container">
+            <div class="header">
+                <h1>🎵 Интерактивное Пианино</h1>
+                <p>Играйте на клавиатуре и смотрите ноты на нотном стане</p>
+            </div>
+            <div class="content">
+                <div class="sheet-music">
+                    <div class="staff">
+                        <div class="clef">𝄞</div>
+                        <div class="notes-container" id="notesContainer">
+                            < !-- Ноты будут добавляться здесь динамически -->
+                        </div>
+                    </div>
+                </div>
+                <div class="piano-container">
+                    <div class="piano">
+                        <div class="white-keys">
+                            <div class="white-key" data-note="C4" data-frequency="261.63"><span class="key-label">C
+                                    (A)</span></div>
+                            <div class="white-key" data-note="D4" data-frequency="293.66"><span class="key-label">D
+                                    (S)</span></div>
+                            <div class="white-key" data-note="E4" data-frequency="329.63"><span class="key-label">E
+                                    (D)</span></div>
+                            <div class="white-key" data-note="F4" data-frequency="349.23"><span class="key-label">F
+                                    (F)</span></div>
+                            <div class="white-key" data-note="G4" data-frequency="392.00"><span class="key-label">G
+                                    (G)</span></div>
+                            <div class="white-key" data-note="A4" data-frequency="440.00"><span class="key-label">A
+                                    (H)</span></div>
+                            <div class="white-key" data-note="B4" data-frequency="493.88"><span class="key-label">B
+                                    (J)</span></div>
+                        </div>
+                        <div class="black-keys">
+                            <div class="black-key" data-note="C#4" data-frequency="277.18"><span class="key-label">C#
+                                    (W)</span></div>
+                            <div class="black-key" data-note="D#4" data-frequency="311.13"><span class="key-label">D#
+                                    (E)</span></div>
+                            <div class="black-key" data-note="F#4" data-frequency="369.99"><span class="key-label">F#
+                                    (T)</span></div>
+                            <div class="black-key" data-note="G#4" data-frequency="415.30"><span class="key-label">G#
+                                    (Y)</span></div>
+                            <div class="black-key" data-note="A#4" data-frequency="466.16"><span class="key-label">A#
+                                    (U)</span></div>
+                        </div>
+                    </div>
+                    <div class="played-notes">
+                        <h3>Сыгранные ноты:</h3>
+                        <div id="notesList"></div>
+                    </div>
+                </div>
+                <div class="controls">
+                    <div class="stats">
+                        <div class="stat-card">
+                            <div class="stat-value" id="totalNotes">0</div>
+                            <div class="stat-label">Всего нот</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-value" id="currentBpm">120</div>
+                            <div class="stat-label">BPM</div>
+                        </div>
+                    </div>
+                    <div class="control-group"><label for="noteDuration">Длительность нот:</label><select
+                            id="noteDuration">
+                            <option value="whole">Целая (1)</option>
+                            <option value="half">Половинная (1/2)</option>
+                            <option value="quarter" selected>Четвертная (1/4)</option>
+                            <option value="eighth">Восьмая (1/8)</option>
+                        </select></div>
+                    <div class="control-group"><label for="autoClear">Автоочистка нот:</label><select id="autoClear">
+                            <option value="0">Не очищать</option>
+                            <option value="10">Через 10 нот</option>
+                            <option value="20" selected>Через 20 нот</option>
+                            <option value="50">Через 50 нот</option>
+                        </select></div><button id="clearNotes">Очистить ноты</button><button id="exportNotes">Экспорт в
+                        MIDI</button>
+                </div>
+            </div>
+        </div>
+        <script>class MusicNotation {
+                constructor() {
+                    this.notesContainer = document.getElementById('notesContainer');
+                    this.notesList = document.getElementById('notesList');
+                    this.totalNotesElement = document.getElementById('totalNotes');
+                    this.noteDuration = document.getElementById('noteDuration');
+                    this.autoClear = document.getElementById('autoClear');
+                    this.clearButton = document.getElementById('clearNotes');
+
+                    this.playedNotes = [];
+                    this.notePositions = this.calculateNotePositions();
+
+                    this.initEventListeners();
+                }
+
+                calculateNotePositions() {
+
+                    // Позиции нот на нотном стане (от нижней линии к верхней)
+                    const positions = {
+                        'C4': 70, 'C#4': 65,
+                        'D4': 60, 'D#4': 55,
+                        'E4': 50,
+                        'F4': 45, 'F#4': 40,
+                        'G4': 35, 'G#4': 30,
+                        'A4': 25, 'A#4': 20,
+                        'B4': 15
+                    }
+
+                        ;
+                    return positions;
+                }
+
+                initEventListeners() {
+                    this.clearButton.addEventListener('click', () => this.clearAllNotes());
+                }
+
+                addNote(noteName, duration = 'quarter') {
+                    const position = this.notePositions[noteName];
+                    if (position === undefined) return;
+
+                    const noteElement = this.createNoteElement(noteName, position, duration);
+                    this.notesContainer.appendChild(noteElement);
+
+                    // Добавляем в список сыгранных нот
+                    this.addToNotesList(noteName);
+
+                    // Автоочистка
+                    this.checkAutoClear();
+
+                    // Анимация
+                    requestAnimationFrame(() => {
+                        noteElement.classList.add('new');
+                    });
+
+                    // Удаляем анимацию через время
+                    setTimeout(() => {
+                        noteElement.classList.remove('new');
+                    }
+
+                        , 500);
+                }
+
+                createNoteElement(noteName, position, duration) {
+                    const noteDiv = document.createElement('div');
+
+                    noteDiv.className = `note $ {
+            duration
+        }
+
+        `;
+
+                    noteDiv.style.left = `$ {
+            this.getNextNotePosition()
+        }
+
+        px`;
+
+                    noteDiv.style.top = `$ {
+            position
+        }
+
+        px`;
+
+                    const noteHead = document.createElement('div');
+                    noteHead.className = 'note-head';
+
+                    const noteStem = document.createElement('div');
+                    noteStem.className = 'note-stem';
+
+                    const noteLabel = document.createElement('div');
+                    noteLabel.className = 'note-label';
+                    noteLabel.textContent = noteName;
+
+                    noteDiv.appendChild(noteHead);
+
+                    if (duration !== 'whole') {
+                        noteDiv.appendChild(noteStem);
+                    }
+
+                    noteDiv.appendChild(noteLabel);
+
+                    // Добавляем дополнительные линии для крайних нот
+                    this.addLedgerLines(noteDiv, position, noteName);
+
+                    return noteDiv;
+                }
+
+                getNextNotePosition() {
+                    const existingNotes = this.notesContainer.querySelectorAll('.note');
+                    return 100 + (existingNotes.length * 40);
+                }
+
+                addLedgerLines(noteDiv, position, noteName) {
+
+                    // Добавляем дополнительные линии для нот за пределами стана
+                    if (position <= 10 || position >= 70) {
+                        const ledgerLine = document.createElement('div');
+                        ledgerLine.className = 'ledger-line';
+
+                        ledgerLine.style.top = `$ {
+                position
+            }
+
+            px`;
+                        ledgerLine.style.left = '-5px';
+                        noteDiv.appendChild(ledgerLine);
+                    }
+                }
+
+                addToNotesList(noteName) {
+                    this.playedNotes.push(noteName);
+
+                    const noteRecord = document.createElement('div');
+                    noteRecord.className = 'note-record';
+
+                    noteRecord.textContent = `$ {
+            this.playedNotes.length
+        }
+
+        . $ {
+            noteName
+        }
+
+        `;
+
+                    this.notesList.appendChild(noteRecord);
+                    this.notesList.scrollTop = this.notesList.scrollHeight;
+
+                    this.updateStats();
+                }
+
+                updateStats() {
+                    this.totalNotesElement.textContent = this.playedNotes.length;
+                }
+
+                checkAutoClear() {
+                    const clearThreshold = parseInt(this.autoClear.value);
+
+                    if (clearThreshold > 0 && this.playedNotes.length >= clearThreshold) {
+                        this.clearAllNotes();
+                    }
+                }
+
+                clearAllNotes() {
+                    this.notesContainer.innerHTML = '';
+                    this.notesList.innerHTML = '<h3>Сыгранные ноты:</h3>';
+                    this.playedNotes = [];
+                    this.updateStats();
+                }
+            }
+
+            class InteractivePiano {
+                constructor() {
+                    this.audioContext = null;
+                    this.volume = 0.5;
+                    this.waveform = 'sine';
+                    this.activeOscillators = new Map();
+                    this.keyMap = new Map();
+                    this.musicNotation = new MusicNotation();
+
+                    this.initAudio();
+                    this.initEventListeners();
+                    this.initKeyboardControls();
+                }
+
+                initAudio() {
+                    try {
+                        this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                    }
+
+                    catch (error) {
+                        console.error('Web Audio API не поддерживается:', error);
+                    }
+                }
+
+                initEventListeners() {
+                    const keys = document.querySelectorAll('.white-key, .black-key');
+
+                    keys.forEach(key => {
+                        key.addEventListener('mousedown', () => this.playNote(key));
+                        key.addEventListener('mouseup', () => this.stopNote(key));
+                        key.addEventListener('mouseleave', () => this.stopNote(key));
+
+                        key.addEventListener('touchstart', (e) => {
+                            e.preventDefault();
+                            this.playNote(key);
+                        });
+
+                        key.addEventListener('touchend', (e) => {
+                            e.preventDefault();
+                            this.stopNote(key);
+                        });
+                    });
+
+                    document.getElementById('exportNotes').addEventListener('click', () => this.exportToMIDI());
+                }
+
+                initKeyboardControls() {
+                    this.keyMap.set('a', 'C4');
+                    this.keyMap.set('s', 'D4');
+                    this.keyMap.set('d', 'E4');
+                    this.keyMap.set('f', 'F4');
+                    this.keyMap.set('g', 'G4');
+                    this.keyMap.set('h', 'A4');
+                    this.keyMap.set('j', 'B4');
+                    this.keyMap.set('w', 'C#4');
+                    this.keyMap.set('e', 'D#4');
+                    this.keyMap.set('t', 'F#4');
+                    this.keyMap.set('y', 'G#4');
+                    this.keyMap.set('u', 'A#4');
+
+                    document.addEventListener('keydown', (e) => {
+                        if (this.keyMap.has(e.key.toLowerCase())) {
+                            e.preventDefault();
+                            const note = this.keyMap.get(e.key.toLowerCase());
+                            const keyElement = document.querySelector(`[data-note="${note}"]`);
+
+                            if (keyElement && !this.activeOscillators.has(note)) {
+                                this.playNote(keyElement);
+                            }
+                        }
+                    });
+
+                    document.addEventListener('keyup', (e) => {
+                        if (this.keyMap.has(e.key.toLowerCase())) {
+                            const note = this.keyMap.get(e.key.toLowerCase());
+                            const keyElement = document.querySelector(`[data-note="${note}"]`);
+
+                            if (keyElement) {
+                                this.stopNote(keyElement);
+                            }
+                        }
+                    });
+                }
+
+                playNote(keyElement) {
+                    if (!this.audioContext) this.initAudio();
+
+                    const frequency = parseFloat(keyElement.dataset.frequency);
+                    const note = keyElement.dataset.note;
+
+                    // Останавливаем предыдущий осциллятор для этой ноты
+                    if (this.activeOscillators.has(note)) {
+                        this.stopNote(keyElement);
+                    }
+
+                    // Создаем звук
+                    if (this.audioContext) {
+                        const oscillator = this.audioContext.createOscillator();
+                        const gainNode = this.audioContext.createGain();
+
+                        oscillator.connect(gainNode);
+                        gainNode.connect(this.audioContext.destination);
+
+                        oscillator.type = this.waveform;
+                        oscillator.frequency.setValueAtTime(frequency, this.audioContext.currentTime);
+
+                        gainNode.gain.setValueAtTime(0, this.audioContext.currentTime);
+                        gainNode.gain.linearRampToValueAtTime(this.volume, this.audioContext.currentTime + 0.1);
+
+                        oscillator.start();
+
+                        this.activeOscillators.set(note, {
+                            oscillator, gainNode
+                        });
+                    }
+
+                    // Визуальная обратная связь
+                    keyElement.classList.add('active');
+
+                    // Добавляем ноту на нотный стан
+                    const duration = document.getElementById('noteDuration').value;
+                    this.musicNotation.addNote(note, duration);
+                }
+
+                stopNote(keyElement) {
+                    const note = keyElement.dataset.note;
+
+                    if (this.activeOscillators.has(note)) {
+                        const {
+                            oscillator,
+                            gainNode
+                        }
+
+                            = this.activeOscillators.get(note);
+
+                        if (this.audioContext) {
+                            gainNode.gain.exponentialRampToValueAtTime(0.001, this.audioContext.currentTime + 0.2);
+
+                            setTimeout(() => {
+                                oscillator.stop();
+                                oscillator.disconnect();
+                            }
+
+                                , 200);
+                        }
+
+                        this.activeOscillators.delete(note);
+                    }
+
+                    keyElement.classList.remove('active');
+                }
+
+                exportToMIDI() {
+                    if (this.musicNotation.playedNotes.length === 0) {
+                        alert('Нет нот для экспорта!');
+                        return;
+                    }
+
+                    // Простая реализация экспорта (в реальном проекте используйте библиотеку like tonal.js)
+                    const notesText = this.musicNotation.playedNotes.join(', ');
+
+                    const blob = new Blob([`MIDI Sequence:\n$ {
+            notesText
+        }
+
+        `], {
+                        type: 'text/plain'
+                    });
+                    const url = URL.createObjectURL(blob);
+
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = 'piano_sequence.txt';
+                    a.click();
+
+                    URL.revokeObjectURL(url);
+                }
+            }
+
+            // Инициализация при загрузке страницы
+            document.addEventListener('DOMContentLoaded', () => {
+                new InteractivePiano();
+            });
+        </script>
+    </body>
+
+    </html>
